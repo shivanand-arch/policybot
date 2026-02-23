@@ -297,7 +297,7 @@ st.markdown("""
 # Configuration
 # ---------------------------------------------------------------------------
 ANTHROPIC_API_KEY = st.secrets.get("ANTHROPIC_API_KEY", os.environ.get("ANTHROPIC_API_KEY", ""))
-MODEL_NAME = os.environ.get("MODEL_NAME", "claude-sonnet-4-5-20250929")
+MODEL_NAME = os.environ.get("MODEL_NAME", "claude-haiku-4-5-20251001")
 
 if not ANTHROPIC_API_KEY:
     st.error("ANTHROPIC_API_KEY not set. Add it in Streamlit Secrets (Settings → Secrets).")
