@@ -441,30 +441,11 @@ if not st.session_state.messages:
         <div class="hero-icon">🤖</div>
         <h2>How can I help you today?</h2>
         <p>Ask me anything about Exotel's HR policies. I have instant answers on leaves, compensation, travel, POSH, separation, and more.</p>
-        <div class="hero-sub">Powered by AI · Trained on 21 policy documents · Always up to date</div>
+        <div class="hero-sub">Covers all 21 Exotel HR policy documents</div>
     </div>
     """, unsafe_allow_html=True)
 
-    # Stats bar
-    st.markdown("""
-    <div class="stats-bar">
-        <div class="stat-item">
-            <div class="stat-num">21</div>
-            <div class="stat-label">Policies Covered</div>
-        </div>
-        <div class="stat-item">
-            <div class="stat-num">96%</div>
-            <div class="stat-label">Accuracy Rate</div>
-        </div>
-        <div class="stat-item">
-            <div class="stat-num">&lt;5s</div>
-            <div class="stat-label">Response Time</div>
-        </div>
-    </div>
-    """, unsafe_allow_html=True)
-
-    # Quick action section title
-    st.markdown('<div class="cat-section"><div class="cat-section-title">Quick Access</div></div>', unsafe_allow_html=True)
+    # Quick action buttons
 
     # Quick action buttons
     quick_questions = [
@@ -535,8 +516,5 @@ with st.sidebar:
 
     st.markdown("---")
     st.markdown("**Exotel HR Policy Hub**")
-    st.caption(f"Model: {MODEL_NAME}")
-    st.caption(f"Knowledge base: {len(kb_content):,} chars")
-    st.caption("21 policies · 96% accuracy")
-    st.markdown("---")
-    st.caption("Confidential — For internal use only")
+    st.caption("21 policies covered")
+    st.caption("For internal use only")
