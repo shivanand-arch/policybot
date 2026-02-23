@@ -1,43 +1,320 @@
 """
-Exotel HR Policy Assistant — Replit Edition
-============================================
+Exotel HR Policy Assistant — Streamlit Edition
+================================================
 Uses Anthropic Claude API to answer employee HR policy questions.
 Same model, same knowledge base, same accuracy as tested.
 
-Set ANTHROPIC_API_KEY in Replit Secrets to get started.
+Deploy on Streamlit Community Cloud for free.
+Set ANTHROPIC_API_KEY in Streamlit Secrets.
 """
 
 import os
-import logging
-
-from flask import Flask, request, jsonify, render_template
+import streamlit as st
 from anthropic import Anthropic
+
+# ---------------------------------------------------------------------------
+# Page config
+# ---------------------------------------------------------------------------
+st.set_page_config(
+    page_title="Exotel HR Policy Hub",
+    page_icon="📚",
+    layout="centered",
+    initial_sidebar_state="collapsed",
+)
+
+# ---------------------------------------------------------------------------
+# Premium CSS — clean, minimal, enterprise-grade
+# ---------------------------------------------------------------------------
+st.markdown("""
+<style>
+    /* ── Fonts & Reset ───────────────────────── */
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+
+    .stApp {
+        font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+        background: #F8F9FC;
+    }
+
+    /* ── Hide Streamlit chrome ───────────────── */
+    header[data-testid="stHeader"] { display: none !important; }
+    #MainMenu { visibility: hidden; }
+    footer { visibility: hidden; }
+    .block-container { padding-top: 0 !important; max-width: 900px; }
+    div[data-testid="stToolbar"] { display: none !important; }
+    div[data-testid="stDecoration"] { display: none !important; }
+
+    /* ── Top Header Bar ──────────────────────── */
+    .top-bar {
+        background: #FFFFFF;
+        border-bottom: 1px solid #E8EAF0;
+        padding: 16px 32px;
+        margin: -1rem -1rem 0 -1rem;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+    }
+    .top-bar-left {
+        display: flex;
+        align-items: center;
+        gap: 14px;
+    }
+    .top-bar-logo {
+        width: 42px; height: 42px;
+        background: linear-gradient(135deg, #5B4FD6, #7C6FE8);
+        border-radius: 12px;
+        display: flex; align-items: center; justify-content: center;
+        color: white; font-size: 20px;
+        box-shadow: 0 2px 8px rgba(91,79,214,0.2);
+    }
+    .top-bar-text h1 {
+        font-size: 18px; font-weight: 700; color: #1A1D2B;
+        margin: 0; letter-spacing: -0.3px;
+    }
+    .top-bar-text p {
+        font-size: 12px; color: #8B8FA3; margin: 2px 0 0;
+        font-weight: 400;
+    }
+    .top-bar-badge {
+        background: #ECFDF5; color: #059669;
+        font-size: 11px; font-weight: 600;
+        padding: 4px 12px; border-radius: 20px;
+        letter-spacing: 0.3px;
+    }
+
+    /* ── Hero Section ────────────────────────── */
+    .hero {
+        text-align: center;
+        padding: 48px 24px 32px;
+    }
+    .hero-icon {
+        width: 80px; height: 80px;
+        background: linear-gradient(135deg, #EDE9FE, #C4B5FD);
+        border-radius: 24px;
+        display: flex; align-items: center; justify-content: center;
+        font-size: 40px;
+        margin: 0 auto 20px;
+        box-shadow: 0 4px 20px rgba(91,79,214,0.15);
+    }
+    .hero h2 {
+        font-size: 26px; font-weight: 800; color: #1A1D2B;
+        margin-bottom: 8px; letter-spacing: -0.5px;
+    }
+    .hero p {
+        font-size: 15px; color: #6B7084;
+        max-width: 500px; margin: 0 auto 8px;
+        line-height: 1.6;
+    }
+    .hero-sub {
+        font-size: 12px; color: #A0A3B5;
+        margin-top: 4px;
+    }
+
+    /* ── Category Cards ──────────────────────── */
+    .cat-section {
+        margin: 8px 0 32px;
+    }
+    .cat-section-title {
+        font-size: 11px; font-weight: 700; text-transform: uppercase;
+        letter-spacing: 1.2px; color: #8B8FA3;
+        margin-bottom: 14px; padding-left: 4px;
+    }
+    .cat-grid {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 12px;
+    }
+    .cat-card {
+        background: #FFFFFF;
+        border: 1px solid #E8EAF0;
+        border-radius: 14px;
+        padding: 18px 16px;
+        cursor: pointer;
+        transition: all 0.25s ease;
+        text-align: center;
+    }
+    .cat-card:hover {
+        border-color: #5B4FD6;
+        box-shadow: 0 4px 16px rgba(91,79,214,0.12);
+        transform: translateY(-2px);
+    }
+    .cat-card .cat-icon {
+        font-size: 28px;
+        display: block;
+        margin-bottom: 10px;
+    }
+    .cat-card .cat-label {
+        font-size: 13px; font-weight: 600; color: #1A1D2B;
+        margin-bottom: 3px;
+    }
+    .cat-card .cat-desc {
+        font-size: 11px; color: #8B8FA3;
+        line-height: 1.4;
+    }
+
+    /* ── Stats Bar ───────────────────────────── */
+    .stats-bar {
+        display: flex;
+        justify-content: center;
+        gap: 32px;
+        padding: 16px 0 8px;
+        margin-bottom: 24px;
+    }
+    .stat-item {
+        text-align: center;
+    }
+    .stat-num {
+        font-size: 22px; font-weight: 800; color: #5B4FD6;
+    }
+    .stat-label {
+        font-size: 11px; color: #8B8FA3; font-weight: 500;
+        margin-top: 2px;
+    }
+
+    /* ── Chat Messages ───────────────────────── */
+    div[data-testid="stChatMessage"] {
+        font-family: 'Inter', sans-serif;
+        font-size: 14px;
+        line-height: 1.75;
+        border-radius: 14px;
+        border: 1px solid #E8EAF0;
+        margin-bottom: 4px;
+    }
+
+    /* ── Markdown Tables ─────────────────────── */
+    div[data-testid="stChatMessage"] table {
+        border-collapse: collapse;
+        margin: 12px 0;
+        font-size: 13px;
+        width: 100%;
+        border-radius: 10px;
+        overflow: hidden;
+        box-shadow: 0 1px 4px rgba(0,0,0,0.04);
+    }
+    div[data-testid="stChatMessage"] th,
+    div[data-testid="stChatMessage"] td {
+        border: 1px solid #E8EAF0;
+        padding: 10px 14px;
+        text-align: left;
+    }
+    div[data-testid="stChatMessage"] th {
+        background: linear-gradient(135deg, #EDE9FE, #E8E5FF);
+        font-weight: 600;
+        color: #5B4FD6;
+        font-size: 12px;
+        text-transform: uppercase;
+        letter-spacing: 0.3px;
+    }
+    div[data-testid="stChatMessage"] tr:nth-child(even) { background: #FAFAFF; }
+    div[data-testid="stChatMessage"] tr:hover { background: #F0EEFF; }
+
+    /* ── Chat Input Styling ──────────────────── */
+    div[data-testid="stChatInput"] {
+        border-top: 1px solid #E8EAF0;
+        padding-top: 8px;
+    }
+    div[data-testid="stChatInput"] textarea {
+        font-family: 'Inter', sans-serif !important;
+        font-size: 14px !important;
+        border-radius: 14px !important;
+        border: 2px solid #E8EAF0 !important;
+        background: #FFFFFF !important;
+    }
+    div[data-testid="stChatInput"] textarea:focus {
+        border-color: #5B4FD6 !important;
+        box-shadow: 0 0 0 3px rgba(91,79,214,0.1) !important;
+    }
+
+    /* ── Streamlit Buttons ───────────────────── */
+    .stButton > button {
+        font-family: 'Inter', sans-serif;
+        font-weight: 600;
+        border-radius: 12px;
+        padding: 10px 16px;
+        font-size: 13px;
+        border: 1.5px solid #E8EAF0;
+        background: #FFFFFF;
+        color: #1A1D2B;
+        transition: all 0.2s ease;
+    }
+    .stButton > button:hover {
+        border-color: #5B4FD6;
+        color: #5B4FD6;
+        background: #F5F3FF;
+        transform: translateY(-1px);
+        box-shadow: 0 2px 8px rgba(91,79,214,0.1);
+    }
+
+    /* ── Sidebar Styling ─────────────────────── */
+    section[data-testid="stSidebar"] {
+        background: #FFFFFF;
+        border-right: 1px solid #E8EAF0;
+    }
+    section[data-testid="stSidebar"] .stButton > button {
+        background: #5B4FD6;
+        color: white;
+        border: none;
+    }
+    section[data-testid="stSidebar"] .stButton > button:hover {
+        background: #4A3FC5;
+        color: white;
+    }
+
+    /* ── Divider ─────────────────────────────── */
+    .clean-divider {
+        height: 1px;
+        background: #E8EAF0;
+        margin: 24px 0;
+        border: none;
+    }
+
+    /* ── Responsive ──────────────────────────── */
+    @media (max-width: 640px) {
+        .cat-grid { grid-template-columns: repeat(2, 1fr); }
+        .top-bar { padding: 12px 16px; }
+        .hero { padding: 32px 16px 24px; }
+        .stats-bar { gap: 20px; }
+    }
+</style>
+""", unsafe_allow_html=True)
+
+# ---------------------------------------------------------------------------
+# Header Bar
+# ---------------------------------------------------------------------------
+st.markdown("""
+<div class="top-bar">
+    <div class="top-bar-left">
+        <div class="top-bar-logo">📚</div>
+        <div class="top-bar-text">
+            <h1>Exotel HR Policy Hub</h1>
+            <p>Your AI-powered HR policy assistant</p>
+        </div>
+    </div>
+    <div class="top-bar-badge">● Online</div>
+</div>
+""", unsafe_allow_html=True)
 
 # ---------------------------------------------------------------------------
 # Configuration
 # ---------------------------------------------------------------------------
-ANTHROPIC_API_KEY = os.environ.get("ANTHROPIC_API_KEY", "")
+ANTHROPIC_API_KEY = st.secrets.get("ANTHROPIC_API_KEY", os.environ.get("ANTHROPIC_API_KEY", ""))
 MODEL_NAME = os.environ.get("MODEL_NAME", "claude-sonnet-4-5-20250929")
 
-# ---------------------------------------------------------------------------
-# App setup
-# ---------------------------------------------------------------------------
-app = Flask(__name__)
-logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger(__name__)
+if not ANTHROPIC_API_KEY:
+    st.error("ANTHROPIC_API_KEY not set. Add it in Streamlit Secrets (Settings → Secrets).")
+    st.stop()
 
-# ---------------------------------------------------------------------------
-# Initialize Anthropic client
-# ---------------------------------------------------------------------------
 client = Anthropic(api_key=ANTHROPIC_API_KEY)
 
 # ---------------------------------------------------------------------------
 # Load Knowledge Base & build system prompt
 # ---------------------------------------------------------------------------
-KB_PATH = os.path.join(os.path.dirname(__file__), "knowledge_base.md")
+@st.cache_data
+def load_knowledge_base():
+    kb_path = os.path.join(os.path.dirname(__file__), "knowledge_base.md")
+    with open(kb_path, "r", encoding="utf-8") as f:
+        return f.read()
 
-with open(KB_PATH, "r", encoding="utf-8") as f:
-    kb_content = f.read()
+kb_content = load_knowledge_base()
 
 SYSTEM_PROMPT = """You are **Exotel's HR Policy Assistant** — a friendly, accurate chatbot that helps Exotel employees understand company HR policies.
 
@@ -148,64 +425,118 @@ Work from Home (WFH), ESOP/stock options, Provident Fund (PF/EPF), Gratuity deta
 
 """ + kb_content
 
-logger.info("Knowledge base loaded: %d chars", len(kb_content))
-logger.info("System prompt total: %d chars", len(SYSTEM_PROMPT))
-
+# ---------------------------------------------------------------------------
+# Session state
+# ---------------------------------------------------------------------------
+if "messages" not in st.session_state:
+    st.session_state.messages = []
 
 # ---------------------------------------------------------------------------
-# Routes
+# Welcome Screen (shown when no messages)
 # ---------------------------------------------------------------------------
-@app.route("/")
-def index():
-    return render_template("index.html")
+if not st.session_state.messages:
+    # Hero section
+    st.markdown("""
+    <div class="hero">
+        <div class="hero-icon">🤖</div>
+        <h2>How can I help you today?</h2>
+        <p>Ask me anything about Exotel's HR policies. I have instant answers on leaves, compensation, travel, POSH, separation, and more.</p>
+        <div class="hero-sub">Powered by AI · Trained on 21 policy documents · Always up to date</div>
+    </div>
+    """, unsafe_allow_html=True)
 
+    # Stats bar
+    st.markdown("""
+    <div class="stats-bar">
+        <div class="stat-item">
+            <div class="stat-num">21</div>
+            <div class="stat-label">Policies Covered</div>
+        </div>
+        <div class="stat-item">
+            <div class="stat-num">96%</div>
+            <div class="stat-label">Accuracy Rate</div>
+        </div>
+        <div class="stat-item">
+            <div class="stat-num">&lt;5s</div>
+            <div class="stat-label">Response Time</div>
+        </div>
+    </div>
+    """, unsafe_allow_html=True)
 
-@app.route("/health")
-def health():
-    return jsonify({"status": "healthy", "model": MODEL_NAME})
+    # Quick action section title
+    st.markdown('<div class="cat-section"><div class="cat-section-title">Quick Access</div></div>', unsafe_allow_html=True)
 
+    # Quick action buttons
+    quick_questions = [
+        ("📅", "Leave Policies", "Types, balance & carry-forward", "What leave types are available and how many days for each?"),
+        ("📱", "Device Lease", "EMI limits & eligibility", "How does the device lease work? What are the EMI limits?"),
+        ("✈️", "Travel & Claims", "Reimbursement rules", "What is the travel reimbursement policy for domestic and international?"),
+        ("💰", "Variable Pay", "OB slabs & GP calculation", "How is the quarterly variable pay calculated for sales roles?"),
+        ("🤝", "Referral Bonus", "Amounts by level", "What are the referral bonus amounts by level?"),
+        ("📋", "All Policies", "Complete coverage list", "List all 21 policies covered in the knowledge base"),
+    ]
 
-@app.route("/chat", methods=["POST"])
-def chat():
-    try:
-        data = request.json
-        user_message = data.get("message", "").strip()
-        chat_history = data.get("history", [])
+    cols = st.columns(3)
+    for i, (icon, label, desc, question) in enumerate(quick_questions):
+        with cols[i % 3]:
+            if st.button(f"{icon}  {label}", key=f"quick_{i}", use_container_width=True, help=desc):
+                st.session_state.messages.append({"role": "user", "content": question})
+                st.rerun()
 
-        if not user_message:
-            return jsonify({"error": "Empty message"}), 400
-
-        # Build messages array for Claude API
-        messages = []
-        for msg in chat_history:
-            role = msg["role"] if msg["role"] == "user" else "assistant"
-            messages.append({"role": role, "content": msg["content"]})
-
-        # Add current message
-        messages.append({"role": "user", "content": user_message})
-
-        # Call Claude API
-        response = client.messages.create(
-            model=MODEL_NAME,
-            max_tokens=2048,
-            temperature=0.2,
-            system=SYSTEM_PROMPT,
-            messages=messages,
-        )
-
-        response_text = response.content[0].text
-
-        logger.info("Q: %.80s... -> %d chars", user_message, len(response_text))
-        return jsonify({"response": response_text})
-
-    except Exception as e:
-        logger.error("Chat error: %s", e)
-        return jsonify({"error": "Something went wrong. Please try again."}), 500
-
+    st.markdown('<div class="clean-divider"></div>', unsafe_allow_html=True)
 
 # ---------------------------------------------------------------------------
-# Entry point
+# Display chat history
 # ---------------------------------------------------------------------------
-if __name__ == "__main__":
-    port = int(os.environ.get("PORT", 8080))
-    app.run(host="0.0.0.0", port=port, debug=False)
+for msg in st.session_state.messages:
+    avatar = "👤" if msg["role"] == "user" else "🤖"
+    with st.chat_message(msg["role"], avatar=avatar):
+        st.markdown(msg["content"])
+
+# ---------------------------------------------------------------------------
+# Chat input
+# ---------------------------------------------------------------------------
+if prompt := st.chat_input("Ask about any HR policy..."):
+    st.session_state.messages.append({"role": "user", "content": prompt})
+    with st.chat_message("user", avatar="👤"):
+        st.markdown(prompt)
+
+    with st.chat_message("assistant", avatar="🤖"):
+        with st.spinner("Looking up policies..."):
+            try:
+                api_messages = []
+                for msg in st.session_state.messages:
+                    role = msg["role"] if msg["role"] == "user" else "assistant"
+                    api_messages.append({"role": role, "content": msg["content"]})
+
+                response = client.messages.create(
+                    model=MODEL_NAME,
+                    max_tokens=2048,
+                    temperature=0.2,
+                    system=SYSTEM_PROMPT,
+                    messages=api_messages,
+                )
+                response_text = response.content[0].text
+            except Exception as e:
+                response_text = f"Sorry, something went wrong. Please try again. (Error: {str(e)[:100]})"
+
+        st.markdown(response_text)
+        st.session_state.messages.append({"role": "assistant", "content": response_text})
+
+# ---------------------------------------------------------------------------
+# Sidebar
+# ---------------------------------------------------------------------------
+with st.sidebar:
+    st.markdown("### ⚙️ Options")
+
+    if st.button("🔄 New Chat", use_container_width=True):
+        st.session_state.messages = []
+        st.rerun()
+
+    st.markdown("---")
+    st.markdown("**Exotel HR Policy Hub**")
+    st.caption(f"Model: {MODEL_NAME}")
+    st.caption(f"Knowledge base: {len(kb_content):,} chars")
+    st.caption("21 policies · 96% accuracy")
+    st.markdown("---")
+    st.caption("Confidential — For internal use only")
