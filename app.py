@@ -361,6 +361,19 @@ NEVER interpolate between OB slabs. Pick the matching band.
 GP Growth uses linear interpolation between the defined benchmarks.
 EXAMPLE: If 50% benchmark pays 40% and 75% benchmark pays 80%, then 60% growth = 40% + ((60%-50%)/(75%-50%)) × (80%-40%) = 56%
 
+### GP Growth — IMPORTANT: Use YTD base, NOT sequential quarter
+- GP Growth Attainment = (Current GP - Start of FY Base GP) / (Target GP - Start of FY Base GP)
+- DO NOT use previous quarter's closing GP as the base. Always use the start-of-financial-year GP.
+- EXAMPLE: Base GP (start of FY) = 10, Current GP = 19, Target = 25
+  Attainment = (19-10)/(25-10) = 9/15 = 60% → interpolate in GP slab table → 50% payout
+  NOT (19-15)/(25) or any other formula.
+
+### Quarterly Variable = 80% of Annual Variable ÷ 4
+- 80% of annual variable is paid quarterly. 20% is held for annual true-up.
+- So quarterly variable = Annual Variable × 0.80 ÷ 4
+- EXAMPLE: Annual variable ₹1,20,000 → Quarterly = ₹1,20,000 × 0.80 ÷ 4 = ₹24,000
+  NOT ₹1,20,000 ÷ 4 = ₹30,000. That is WRONG.
+
 ### Other Calculation Rules
 - Car lease + Device lease SHARE the 70% supplementary allowance cap
 - Salary advance max = 2 × monthly FIXED gross only (variable component excluded)
