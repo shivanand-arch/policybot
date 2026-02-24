@@ -297,7 +297,7 @@ st.markdown("""
 # Configuration
 # ---------------------------------------------------------------------------
 ANTHROPIC_API_KEY = st.secrets.get("ANTHROPIC_API_KEY", os.environ.get("ANTHROPIC_API_KEY", ""))
-MODEL_NAME = os.environ.get("MODEL_NAME", "claude-haiku-4-5-20251001")
+MODEL_NAME = os.environ.get("MODEL_NAME", "claude-sonnet-4-5-20250929")
 
 if not ANTHROPIC_API_KEY:
     st.error("ANTHROPIC_API_KEY not set. Add it in Streamlit Secrets (Settings → Secrets).")
@@ -494,7 +494,13 @@ if prompt := st.chat_input("Ask about any HR policy..."):
                     model=MODEL_NAME,
                     max_tokens=2048,
                     temperature=0.2,
-                    system=SYSTEM_PROMPT,
+                    system=[
+                        {
+                            "type": "text",
+                            "text": SYSTEM_PROMPT,
+                            "cache_control": {"type": "ephemeral"},
+                        }
+                    ],
                     messages=api_messages,
                 )
                 response_text = response.content[0].text
